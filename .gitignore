@@ -1,1 +1,17 @@
 db.sqlite3
+
+# IDE files
+.idea/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# OS files
+.DS_Store
