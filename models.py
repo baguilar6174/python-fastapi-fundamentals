@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from sqlmodel import SQLModel, Field, Relationship
+from enum import Enum
 
 
 class CustomerBase(SQLModel):
@@ -16,11 +17,16 @@ class CustomerCreate(CustomerBase):
 class CustomerUpdate(CustomerBase):
     pass
 
+class StatusEnum(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
 
 class CustomerPlan(SQLModel, table=True):
     id: int = Field(primary_key=True)
     plan_id: int = Field(foreign_key="plan.id")
     customer_id: int = Field(foreign_key="customer.id")
+    status: StatusEnum = Field(default=StatusEnum.ACTIVE)
 
 
 class Customer(CustomerBase, table=True):
