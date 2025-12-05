@@ -1,43 +1,14 @@
-from fastapi import FastAPI, HTTPException, status
-from datetime import datetime
-import zoneinfo
+from fastapi import HTTPException, status, APIRouter
 from sqlmodel import select
 
-from models import CustomerCreate, CustomerUpdate, Customer, Transaction, Invoice
-from db import SessionDependency, create_all_tables
+from models import CustomerCreate, CustomerUpdate, Customer
+from db import SessionDependency
 
-app = FastAPI(lifespan=create_all_tables)
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-
-@app.get("/hello/{name}")
-async def say_hello(name: str):
-    return {"message": f"Hello {name}"}
-
-
-timezones = {
-    "CO": "America/Bogota",
-    "MX": "America/Mexico_City",
-    "PE": "America/Lima",
-    "AZ": "America/Sao_Paulo",
-}
-
-
-@app.get("/time/{iso_code}")
-async def time(iso_code: str):
-    iso = iso_code.upper()
-    timezone = timezones.get(iso)
-    tz = zoneinfo.ZoneInfo(timezone)
-    return {"time": datetime.now(tz)}
-
+router = APIRouter()
 
 db_customers: list[Customer] = []
 
-
-@app.post("/customers", response_model=Customer)
+@router.post("/customers", response_model=Customer, tags=["customers"])
 async def create_customer(data: CustomerCreate, session: SessionDependency):
     customer = Customer.model_validate(data.model_dump())
 
@@ -54,7 +25,7 @@ async def create_customer(data: CustomerCreate, session: SessionDependency):
     return customer
 
 
-@app.get("/customers", response_model=list[Customer])
+@router.get("/customers", response_model=list[Customer], tags=["customers"])
 async def get_customers(session: SessionDependency):
     """
     In local memory
@@ -63,7 +34,7 @@ async def get_customers(session: SessionDependency):
     return session.exec(select(Customer)).all()
 
 
-@app.get("/customer/{id}", response_model=Customer)
+@router.get("/customer/{id}", response_model=Customer, tags=["customers"])
 async def get_customer_by_id(id: int, session: SessionDependency):
     """
     In local memory
@@ -75,7 +46,7 @@ async def get_customer_by_id(id: int, session: SessionDependency):
     return customer
 
 
-@app.delete("/customer/{id}")
+@router.delete("/customer/{id}", tags=["customers"])
 async def remove_customer_by_id(id: int, session: SessionDependency):
     customer = session.get(Customer, id)
     if not customer:
@@ -85,7 +56,7 @@ async def remove_customer_by_id(id: int, session: SessionDependency):
     return { "detail": "Customer deleted" }
 
 
-@app.patch("/customer/{id}", response_model=Customer, status_code=status.HTTP_201_CREATED)
+@router.patch("/customer/{id}", response_model=Customer, status_code=status.HTTP_201_CREATED, tags=["customers"])
 async def update_customer_by_id(id: int, data: CustomerUpdate, session: SessionDependency):
     customer = session.get(Customer, id)
     if not customer:
@@ -96,13 +67,3 @@ async def update_customer_by_id(id: int, data: CustomerUpdate, session: SessionD
     session.commit()
     session.refresh(customer)
     return customer
-
-
-@app.post("/transactions")
-async def create_transaction(data: Transaction):
-    return data
-
-
-@app.post("/invoices")
-async def create_invoice(data: Invoice):
-    return data
