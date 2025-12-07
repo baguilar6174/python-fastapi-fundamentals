@@ -1,8 +1,10 @@
 import time
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends, HTTPException, status
 from datetime import datetime
 import zoneinfo
+from fastapi.security import HTTPBasicCredentials, HTTPBasic
+from typing import Annotated
 
 from db import create_all_tables
 from .routers import customers, transactions, invoices, plans
@@ -22,9 +24,21 @@ async def log_request_time(request: Request, call_next):
     print(f"{request.url} completed in {process_time:.4f} seconds")
     return response
 
+
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
+
+security = HTTPBasic()
+
+
+@app.get("/admin")
+async def admin_endpoint(credentials: Annotated[HTTPBasicCredentials, Depends(security)]):
+    if credentials.username == "admin" and credentials.password == "password":
+        return {"message": f"Hello {credentials.username}!"}
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
 
 timezones = {
